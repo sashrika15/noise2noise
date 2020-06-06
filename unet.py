@@ -1,5 +1,3 @@
-#print('__file__={0:<35} | __name__={1:<20} | __package__={2:<20}'.format(__file__,__name__,str(__package__)))
-
 import torch
 import torch.nn as nn 
 import os
@@ -71,19 +69,28 @@ class Unet(nn.Module):
         pool2 = self._block2(pool1)
         #print(pool2.size())
         pool3 = self._block2(pool2)
+        #print(pool3.size())
         pool4 = self._block2(pool3)
+        #print(pool4.size())
         pool5 = self._block2(pool4)
+        #print(pool5.size())
 
 
         # Decoder
         upsample5 = self._block3(pool5)
+        #print(upsample5.size())
         concat5 = torch.cat((upsample5, pool4), dim=1)
+        #print(concat5.size())
         upsample4 = self._block4(concat5)
+        #print(upsample4.size())
         concat4 = torch.cat((upsample4, pool3), dim=1)
+        #print(concat4.size())
         upsample3 = self._block5(concat4)
         #print(upsample3.size())
         concat3 = torch.cat((upsample3, pool2), dim=1)
+        #print(concat3.size())
         upsample2 = self._block5(concat3)
+        #print(upsample2.size())
         concat2 = torch.cat((upsample2, pool1), dim=1)
         #print(concat2.size())
         upsample1 = self._block5(concat2)
