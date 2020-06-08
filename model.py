@@ -4,8 +4,8 @@ import torchvision.transforms.functional as tvf
 from torch.utils.data import DataLoader
 import gdown
 import json
-from .unet import Unet
-from .dataset import NoisyDataset
+from unet import Unet
+from dataset import NoisyDataset
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
 
