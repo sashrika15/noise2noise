@@ -1,14 +1,11 @@
 import torch
 import torch.nn as nn 
-import os
-import numpy as np
 
 
 class Unet(nn.Module):
     '''
     Unet architecture for n2n.
     No batch norm, dropout
-
     '''
 
     def __init__(self, in_channels=3, out_channels=3):
@@ -32,7 +29,6 @@ class Unet(nn.Module):
                 nn.Conv2d(48, 48, 3, stride=1, padding=1),
                 nn.ReLU(inplace=True),
                 nn.ConvTranspose2d(48, 48, 3, stride=2, padding=1, output_padding=1))
-                #nn.Upsample(scale_factor=2, mode='nearest'))
 
             self._block4 = nn.Sequential(
                 nn.Conv2d(96, 96, 3, stride=1, padding=1),
@@ -40,7 +36,6 @@ class Unet(nn.Module):
                 nn.Conv2d(96, 96, 3, stride=1, padding=1),
                 nn.ReLU(inplace=True),
                 nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1))
-                #nn.Upsample(scale_factor=2, mode='nearest'))
 
             self._block5 = nn.Sequential(
                 nn.Conv2d(144, 96, 3, stride=1, padding=1),
@@ -48,7 +43,6 @@ class Unet(nn.Module):
                 nn.Conv2d(96, 96, 3, stride=1, padding=1),
                 nn.ReLU(inplace=True),
                 nn.ConvTranspose2d(96, 96, 3, stride=2, padding=1, output_padding=1))
-                #nn.Upsample(scale_factor=2, mode='nearest'))
 
             self._block6 = nn.Sequential(
                 nn.Conv2d(96 + in_channels, 64, 3, stride=1, padding=1),
@@ -60,9 +54,8 @@ class Unet(nn.Module):
 
 
     def forward(self, x):
-        """Through encoder, then decoder by adding U-skip connections. """
 
-        # Encoder
+        #Encoder
         #print("X size = ", str(x.size()))
         pool1 = self._block1(x)
         #print(pool1.size())
@@ -75,8 +68,7 @@ class Unet(nn.Module):
         pool5 = self._block2(pool4)
         #print(pool5.size())
 
-
-        # Decoder
+        #Decoder
         upsample5 = self._block3(pool5)
         #print(upsample5.size())
         concat5 = torch.cat((upsample5, pool4), dim=1)
