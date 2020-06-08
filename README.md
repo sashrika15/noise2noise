@@ -9,7 +9,7 @@ To run test on images in /test_images, run command:
 ```
 python n2n_test.py
 ```
-The noise type can be changing the noise parameter in n2n_test.py
+The noise type can be edited in n2n_test.py
 
 ### Output 
 
