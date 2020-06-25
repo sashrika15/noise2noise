@@ -1,7 +1,10 @@
 import os
 import torch
 import torchvision.transforms.functional as tvf
+import torch.nn as nn
+from torch.optim import Adam, lr_scheduler
 from torch.utils.data import DataLoader
+from PIL import Image
 import gdown
 import json
 from unet import Unet
@@ -13,7 +16,7 @@ class Noise2Noise:
     '''
     Noise2Noise class. 
     '''
-    def __init__(self,data_path,noise,show=False):
+    def __init__(self,data_path,noise,show=False,mode='inference'):
         '''
         Initialise class
         '''
@@ -21,16 +24,14 @@ class Noise2Noise:
         self.show = show
         self.noise = noise
         self.data_path = data_path
-    
-        test_loader = self.load_dataset(data_path)
+        self.mode = mode
+        self.crop_size = 320
 
         if torch.cuda.is_available():
             self.map_location = 'cuda'
         else:
             self.map_location = 'cpu'
         
-        self.check_weights()
-
         try:
             self.model = Unet(in_channels=3)
             self.load_model()
@@ -39,9 +40,38 @@ class Noise2Noise:
             print("Error at {}".format(err))
             exit()
 
-        self.save_path = self.save_path()    
-        self.inference(test_loader)
+        if mode=='inference':
+            imgs = self.format_data(data_path)  
+            self.save_path = self.save_path()  
+            self.check_weights()
+            self.inference(imgs)
+        else:
+            self.loss = nn.MSELoss()
+            self.optim = Adam(self.model.parameters(),lr=1e-3)
+            self.scheduler = lr_scheduler.ReduceLROnPlateau(self.optim,
+                factor=0.5, verbose=True)
+            train_loader = self.load_dataset(data_path)
+            self.train(train_loader)
 
+
+
+    def format_data(self,data_path):
+        imgs_path = []
+        imgs = []
+        for file in os.listdir(data_path):
+            if file.endswith(".jpg") or file.endswith(".png"):
+                imgs_path.append( os.path.join(data_path,file))
+
+        # Cropping Images
+        for file in imgs_path:
+            img = Image.open(file)
+            w,h = img.size
+            m = min(w,h)
+            img = tvf.crop(img,0,0,m,m)
+            img = tvf.resize(img,(self.crop_size, self.crop_size))
+            imgs.append(img)
+       
+        return imgs
 
 
     def check_weights(self):
@@ -69,8 +99,8 @@ class Noise2Noise:
     
     def load_dataset(self,img):
         dataset = NoisyDataset(img, self.noise, crop_size=256)
-        test_loader = DataLoader(dataset, batch_size=1)
-        return test_loader
+        train_loader = DataLoader(dataset, batch_size=2)
+        return train_loader
 
     def save_path(self):
         '''
@@ -84,16 +114,17 @@ class Noise2Noise:
         return save_path
 
 
-    def inference(self,test_loader):
+    def inference(self,imgs):
         '''
         Inference of model
-        Input: test_loader: Dataloader object
+        Input: imgs: List of images to denoise
         '''
         source_imgs = []
         denoised_imgs = []   
 
-        for source in list(test_loader):
-            source_imgs.append(tvf.to_pil_image(torch.squeeze(source))) 
+        for source in imgs:
+            source_imgs.append(source)
+            source = torch.unsqueeze(tvf.to_tensor(source),dim=0)
             output = self.model(source)
             denoised = tvf.to_pil_image(torch.squeeze(output))
             denoised_imgs.append(denoised)
@@ -107,6 +138,19 @@ class Noise2Noise:
             if self.show==True:
                 source.show()
                 denoised.show()
-            
-            
+
+    
+    def train(self,train_loader):
+
+        for epoch in range(2):
+            print("Epoch {}/{}".format(epoch+1,2))
+            for batch, (source,target) in enumerate(train_loader):
+                denoised = self.model(source)
+                loss = self.loss(denoised,target)
+                print("Loss = ", loss.item())
+                self.optim.zero_grad()
+                loss.backward()
+                self.optim.step()
+
+
 

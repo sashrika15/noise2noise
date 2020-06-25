@@ -100,10 +100,10 @@ class NoisyDataset(Dataset):
 
         if self.noise == 'text':
             source = tvf.to_tensor(self.add_text(resized_img))
+            target = tvf.to_tensor(self.add_text(resized_img))
         else:
             source = tvf.to_tensor(self.gaussian_noise(resized_img))
+            target = tvf.to_tensor(self.gaussian_noise(resized_img))
         
-        return source
+        return source,target
 
-
- 
